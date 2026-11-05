@@ -1441,6 +1441,17 @@ function saveImage() {
       });
   }
 
+  // 3. Draw coordinate grid overlay if enabled
+  if (gridVisible) {
+    const gc = document.getElementById('gridcanvas');
+    if (gc && gc.width > 0 && gc.height > 0) {
+      try {
+        drawGrid(); // ensure latest grid is rendered
+        ctx.drawImage(gc, 0, 0);
+      } catch(e) {}
+    }
+  }
+
   const now = new Date();
   const pad = n => String(n).padStart(2,'0');
   const ts = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
@@ -1450,7 +1461,7 @@ function saveImage() {
   link.href = offscreen.toDataURL('image/png');
   link.click();
 
-  appendConsole(`💾 图片已保存：turtle_${ts}.png`, 'info');
+  appendConsole(`💾 图片已保存（${gridVisible ? '包含坐标系' : '画布'}）：turtle_${ts}.png`, 'info');
 }
 
 /* =====================================================
