@@ -272,6 +272,44 @@ body {
   background: none;
 }
 
+/* ===== Color Target Segmented Tabs ===== */
+.color-target-selector {
+  display: flex;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  gap: 3px;
+  margin-bottom: 8px;
+}
+.color-target-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-family: inherit;
+  font-weight: 700;
+  padding: 5px 2px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.color-target-btn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+.color-target-btn.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+}
+
 /* ===== Accordion for Snippets ===== */
 .snippet-category { border-bottom: 1px solid var(--border); }
 .snippet-cat-header {
@@ -690,9 +728,14 @@ body {
           <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
         </div>
         <div class="panel-body">
+          <div class="color-target-selector">
+            <button type="button" class="color-target-btn active" data-type="pencolor" onclick="setColorTarget('pencolor')">✏️ 画笔色</button>
+            <button type="button" class="color-target-btn" data-type="fillcolor" onclick="setColorTarget('fillcolor')">🪣 填充色</button>
+            <button type="button" class="color-target-btn" data-type="bgcolor" onclick="setColorTarget('bgcolor')">🖼️ 背景色</button>
+          </div>
           <div id="color-grid"></div>
           <div class="custom-color-row">
-            <label>🖌️ 自定义颜色：</label>
+            <label id="custom-color-label">🖌️ 自定义画笔色：</label>
             <input type="color" id="custom-color" value="#ff6b6b" title="选择自定义颜色">
             <button class="btn btn-sm" onclick="insertCustomColor()"
               style="background:linear-gradient(135deg,#ec4899,#be185d);color:#fff;padding:5px 10px;font-size:12px;">
@@ -1507,6 +1550,48 @@ const COLORS = [
   { name: 'black',     hex: '#111111' },
 ];
 
+let currentColorTarget = 'pencolor'; // 'pencolor' | 'fillcolor' | 'bgcolor'
+
+function setColorTarget(type) {
+  currentColorTarget = type;
+  document.querySelectorAll('.color-target-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-type') === type);
+  });
+  const labelMap = {
+    pencolor: '🖌️ 自定义画笔色：',
+    fillcolor: '🪣 自定义填充色：',
+    bgcolor: '🖼️ 自定义背景色：'
+  };
+  const labelEl = document.getElementById('custom-color-label');
+  if (labelEl && labelMap[type]) {
+    labelEl.textContent = labelMap[type];
+  }
+  updateSwatchTooltips();
+}
+
+function getColorSnippet(colorVal) {
+  if (currentColorTarget === 'fillcolor') {
+    return `turtle.fillcolor("${colorVal}")`;
+  } else if (currentColorTarget === 'bgcolor') {
+    return `turtle.bgcolor("${colorVal}")`;
+  }
+  return `turtle.pencolor("${colorVal}")`;
+}
+
+function updateSwatchTooltips() {
+  const prefixMap = {
+    pencolor: '画笔色: ',
+    fillcolor: '填充色: ',
+    bgcolor: '背景色: '
+  };
+  const prefix = prefixMap[currentColorTarget] || '';
+  document.querySelectorAll('#color-grid .color-swatch').forEach(swatch => {
+    const cname = swatch.getAttribute('data-color');
+    swatch.title = prefix + cname;
+    swatch.setAttribute('data-tip', prefix + cname);
+  });
+}
+
 (function buildColorGrid() {
   const grid = document.getElementById('color-grid');
   COLORS.forEach(c => {
@@ -1514,10 +1599,10 @@ const COLORS = [
     swatch.className = 'color-swatch tooltip-wrap';
     swatch.style.background = c.hex;
     swatch.setAttribute('data-color', c.name);
-    swatch.setAttribute('data-tip', c.name);
-    swatch.title = c.name;
+    swatch.setAttribute('data-tip', '画笔色: ' + c.name);
+    swatch.title = '画笔色: ' + c.name;
     swatch.addEventListener('click', () => {
-      insertCode(`turtle.pencolor("${c.name}")`);
+      insertCode(getColorSnippet(c.name));
     });
     grid.appendChild(swatch);
   });
@@ -1525,7 +1610,7 @@ const COLORS = [
 
 function insertCustomColor() {
   const hex = document.getElementById('custom-color').value;
-  insertCode(`turtle.pencolor("${hex}")`);
+  insertCode(getColorSnippet(hex));
 }
 
 document.getElementById('custom-color').addEventListener('change', function() {
