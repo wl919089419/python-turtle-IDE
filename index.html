@@ -12,6 +12,43 @@
 <link rel="stylesheet" href="lib/fontawesome/css/all.min.css">
 
 <style>
+/* ===== Custom Offline Fonts ===== */
+@font-face {
+  font-family: 'MaShanZheng';
+  src: url('lib/fonts/MaShanZheng-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Ma Shan Zheng';
+  src: url('lib/fonts/MaShanZheng-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'ZCOOLKuaiLe';
+  src: url('lib/fonts/ZCOOLKuaiLe-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'ZCOOL KuaiLe';
+  src: url('lib/fonts/ZCOOLKuaiLe-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'PressStart2P';
+  src: url('lib/fonts/PressStart2P-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Press Start 2P';
+  src: url('lib/fonts/PressStart2P-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Pacifico';
+  src: url('lib/fonts/Pacifico-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+
 /* ===== CSS Reset & Base ===== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -98,6 +135,8 @@ body {
 .btn-clear { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; }
 .btn-save  { background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; }
 .btn-grid  { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: #fff; font-size: 13px; padding: 8px 14px; }
+.btn-file  { background: rgba(255,255,255,0.08); border: 1px solid var(--border); color: var(--text); font-size: 13px; padding: 8px 14px; }
+.btn-file:hover { background: rgba(255,255,255,0.16); border-color: var(--accent2); color: #fff; }
 .btn-sm    { font-size: 13px; padding: 7px 12px; }
 
 /* ===== Main Layout ===== */
@@ -608,8 +647,11 @@ body {
 <div id="header">
   <img src="assets/logo.png" alt="makcoo" class="header-logo-img">
   <div class="spacer"></div>
+  <button class="btn btn-file" id="btn-open-file" title="打开本地 Python 文件 (.py)"><i class="fas fa-folder-open"></i> 打开文件</button>
+  <button class="btn btn-file" id="btn-export-code" title="导出代码为 .py 文件"><i class="fas fa-download"></i> 导出代码</button>
   <button class="btn btn-run" id="btn-run-stop"><i class="fas fa-play"></i> 运行</button>
   <button class="btn btn-clear" id="btn-clear"><i class="fas fa-trash-alt"></i> 清除</button>
+  <input type="file" id="file-py-input" accept=".py,.txt" style="display:none">
 </div>
 
 <!-- ===== MAIN ===== -->
@@ -751,11 +793,43 @@ function resizeGridCanvas() {
   if (gridVisible) drawGrid();
 }
 
-window.addEventListener('resize', function() {
-  resizeGridCanvas();
-});
+// Keep painted turtle content aligned and centered with the canvas origin on window resize
+function handleResize() {
+  const { w: newW, h: newH } = getCanvasSize();
+  const gc = document.getElementById('gridcanvas');
+  const oldW = gc.width || newW;
+  const oldH = gc.height || newH;
 
-setTimeout(resizeGridCanvas, 100);
+  const target = document.getElementById('turtle-target');
+  if (target && (oldW !== newW || oldH !== newH)) {
+    const dx = (newW - oldW) / 2;
+    const dy = (newH - oldH) / 2;
+    const canvases = Array.from(target.querySelectorAll('canvas'));
+
+    canvases.forEach(cvs => {
+      if (cvs.width > 0 && cvs.height > 0) {
+        const temp = document.createElement('canvas');
+        temp.width = cvs.width;
+        temp.height = cvs.height;
+        const tctx = temp.getContext('2d');
+        tctx.drawImage(cvs, 0, 0);
+
+        cvs.width = newW;
+        cvs.height = newH;
+        cvs.style.width = newW + 'px';
+        cvs.style.height = newH + 'px';
+
+        const ctx = cvs.getContext('2d');
+        ctx.drawImage(temp, dx, dy);
+      }
+    });
+  }
+
+  resizeGridCanvas();
+}
+
+window.addEventListener('resize', handleResize);
+setTimeout(handleResize, 100);
 
 /* =====================================================
    EDITOR SETUP
@@ -776,11 +850,11 @@ turtle.pencolor("blue")
 turtle.fillcolor("gold")
 rect(120, 80, -60, 40, 0)
 
-# 在矩形上方书写文字
+# 在矩形上方书写文字（支持 MaShanZheng 书法体、ZCOOLKuaiLe 快乐体、PressStart2P 像素体等）
 turtle.penup()
 turtle.goto(0, 60)
 turtle.pencolor("purple")
-turtle.write("Turtle 编程乐园", align="center", font=("Microsoft YaHei", 18, "bold"))
+turtle.write("Turtle 编程乐园", align="center", font=("MaShanZheng", 26, "normal"))
 `;
 
 const editor = CodeMirror.fromTextArea(document.getElementById('code-editor'), {
@@ -910,7 +984,34 @@ def rect(w, h, x=0, y=0, linewidth=1):
         turtle.pendown()
 
 turtle.rect = rect
-write = turtle.write
+
+_orig_turtle_write = turtle.write
+def write(arg, move=False, align="left", font=("Arial", 14, "normal")):
+    if isinstance(font, (list, tuple)) and len(font) >= 3:
+        fname = str(font[0]).strip()
+        font_map = {
+            "Ma Shan Zheng": "MaShanZheng",
+            "书法体": "MaShanZheng",
+            "楷体": "MaShanZheng",
+            "ZCOOL KuaiLe": "ZCOOLKuaiLe",
+            "快乐体": "ZCOOLKuaiLe",
+            "卡通体": "ZCOOLKuaiLe",
+            "Press Start 2P": "PressStart2P",
+            "像素体": "PressStart2P",
+            "复古体": "PressStart2P",
+            "Pacifico": "Pacifico",
+            "手写体": "Pacifico",
+            "花体": "Pacifico",
+            "微软雅黑": "Microsoft YaHei",
+            "黑体": "SimHei",
+            "宋体": "SimSun"
+        }
+        if fname in font_map:
+            fname = font_map[fname]
+        font = (fname, font[1], font[2])
+    return _orig_turtle_write(arg, move, align, font)
+
+turtle.write = write
 `;
 const PRELUDE_LINES = TURTLE_PRELUDE.split('\n').length - 1;
 
@@ -1129,10 +1230,9 @@ function toggleConsole() {
 }
 
 /* =====================================================
-   SAVE IMAGE (Feature 1)
+   SAVE IMAGE (Feature 1 - Merge all layers)
    ===================================================== */
 function saveImage() {
-  const turtleCanvas = document.querySelector('#turtle-target canvas');
   const { w, h } = getCanvasSize();
 
   const offscreen = document.createElement('canvas');
@@ -1140,12 +1240,22 @@ function saveImage() {
   offscreen.height = h;
   const ctx = offscreen.getContext('2d');
 
-  // White background
+  // 1. White background
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, w, h);
 
-  // Draw turtle canvas if it exists
-  if (turtleCanvas) ctx.drawImage(turtleCanvas, 0, 0);
+  // 2. Draw all turtle layers in order (background, drawing paper, sprites)
+  const target = document.getElementById('turtle-target');
+  if (target) {
+    const canvases = Array.from(target.querySelectorAll('canvas'));
+    canvases
+      .filter(c => c.style.display !== 'none' && c.width > 0 && c.height > 0)
+      .forEach(c => {
+        try {
+          ctx.drawImage(c, 0, 0);
+        } catch(e) {}
+      });
+  }
 
   const now = new Date();
   const pad = n => String(n).padStart(2,'0');
@@ -1158,6 +1268,44 @@ function saveImage() {
 
   appendConsole(`💾 图片已保存：turtle_${ts}.png`, 'info');
 }
+
+/* =====================================================
+   EXPORT CODE & OPEN FILE (Feature 5)
+   ===================================================== */
+function exportPythonCode() {
+  const code = editor.getValue();
+  const blob = new Blob([code], { type: 'text/x-python;charset=utf-8' });
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const ts = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+  const filename = `turtle_${ts}.py`;
+
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(link.href);
+
+  appendConsole(`📥 已导出 Python 代码：${filename}`, 'info');
+}
+
+function openPythonFile() {
+  document.getElementById('file-py-input').click();
+}
+
+document.getElementById('btn-export-code').addEventListener('click', exportPythonCode);
+document.getElementById('btn-open-file').addEventListener('click', openPythonFile);
+document.getElementById('file-py-input').addEventListener('change', function(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    editor.setValue(evt.target.result);
+    appendConsole(`📂 成功打开 Python 文件：${file.name}`, 'info');
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
 
 /* =====================================================
    GRID & COORDINATE OVERLAY (Feature 2)
@@ -1409,12 +1557,14 @@ const SNIPPET_CATEGORIES = [
           <div class="write-field">
             <label>字体名称</label>
             <select id="write-font-family">
-              <option value="Microsoft YaHei" selected>微软雅黑</option>
-              <option value="SimHei">黑体</option>
-              <option value="KaiTi">楷体</option>
-              <option value="SimSun">宋体</option>
-              <option value="Arial">Arial</option>
-              <option value="Courier New">等宽 (Courier)</option>
+              <option value="MaShanZheng" selected>🖌️ 毛笔书法 (楷体)</option>
+              <option value="ZCOOLKuaiLe">🎈 站酷快乐 (卡通)</option>
+              <option value="PressStart2P">👾 8-Bit 复古 (像素)</option>
+              <option value="Pacifico">✨ 浪漫花体 (英文)</option>
+              <option value="Microsoft YaHei">微软雅黑 (黑体)</option>
+              <option value="SimSun">宋体 (衬线)</option>
+              <option value="Arial">Arial (标准)</option>
+              <option value="Courier New">等宽 (代码体)</option>
             </select>
           </div>
           <div class="write-field">
@@ -1485,14 +1635,24 @@ const SNIPPET_CATEGORIES = [
     },
     snippets: [
       {
+        icon: '🖌️', label: '毛笔书法文字',
+        code: 'turtle.write("海龟编程乐园", align="center", font=("MaShanZheng", 28, "normal"))',
+        display: 'MaShanZheng'
+      },
+      {
+        icon: '🎈', label: '卡通快乐文字',
+        code: 'turtle.write("天天开心！", align="center", font=("ZCOOLKuaiLe", 24, "normal"))',
+        display: 'ZCOOLKuaiLe'
+      },
+      {
+        icon: '👾', label: '复古像素文字',
+        code: 'turtle.write("GAME OVER", align="center", font=("PressStart2P", 16, "normal"))',
+        display: 'PressStart2P'
+      },
+      {
         icon: '📝', label: '简易文字',
         code: 'turtle.write("你好，世界！")',
         display: 'write("文本")'
-      },
-      {
-        icon: '🎯', label: '居中大标题',
-        code: 'turtle.write("标题文字", align="center", font=("Microsoft YaHei", 24, "bold"))',
-        display: 'write(align,font)'
       }
     ]
   },
