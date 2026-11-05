@@ -652,10 +652,12 @@ body {
    ===================================================== */
 function getCanvasSize() {
   const container = document.getElementById('canvas-container');
-  return {
-    w: container.clientWidth  || container.offsetWidth  || 800,
-    h: container.clientHeight || container.offsetHeight || 600
-  };
+  let w = Math.floor(container.clientWidth  || container.offsetWidth  || 800);
+  let h = Math.floor(container.clientHeight || container.offsetHeight || 600);
+  // Ensure even dimensions so origin (w/2, h/2) lands on precise integer pixel
+  if (w % 2 !== 0) w -= 1;
+  if (h % 2 !== 0) h -= 1;
+  return { w, h };
 }
 
 function resizeGridCanvas() {
@@ -670,15 +672,6 @@ function resizeGridCanvas() {
 
 window.addEventListener('resize', function() {
   resizeGridCanvas();
-  // Also update Skulpt turtle canvas size if it exists
-  const turtleCanvas = document.querySelector('#turtle-target canvas');
-  if (turtleCanvas) {
-    const { w, h } = getCanvasSize();
-    turtleCanvas.width  = w;
-    turtleCanvas.height = h;
-    turtleCanvas.style.width  = w + 'px';
-    turtleCanvas.style.height = h + 'px';
-  }
 });
 
 setTimeout(resizeGridCanvas, 100);
@@ -691,13 +684,20 @@ const STARTER_CODE = `import turtle
 # 🐢 欢迎来到 Python Turtle 编程乐园！
 # 点击「运行」按钮，看看海龟怎么画图吧！
 
+turtle.shape("turtle")
 turtle.speed(3)
 turtle.pensize(2)
 turtle.pencolor("blue")
 
+# 从原点 (0, 0) 开始画正方形
 for i in range(4):
     turtle.forward(100)
     turtle.right(90)
+
+# 使用内置 rect 函数绘制矩形：rect(宽度, 高度, x坐标, y坐标, 线宽)
+# 线宽为 0 表示实心填充矩形
+turtle.fillcolor("gold")
+rect(60, 40, -30, -20, 0)
 `;
 
 const editor = CodeMirror.fromTextArea(document.getElementById('code-editor'), {
@@ -791,6 +791,44 @@ document.getElementById('input-field').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') submitInput();
 });
 
+/* =====================================================
+   TURTLE PRELUDE: Built-in rect() and helpers
+   ===================================================== */
+const TURTLE_PRELUDE = `import turtle
+
+def rect(w, h, x=0, y=0, linewidth=1):
+    _down = turtle.isdown() if hasattr(turtle, "isdown") else True
+    _h = turtle.heading()
+    _sz = turtle.pensize()
+    turtle.penup()
+    turtle.goto(x, y)
+    turtle.setheading(0)
+    if linewidth == 0:
+        turtle.begin_fill()
+        for _ in range(2):
+            turtle.forward(w)
+            turtle.left(90)
+            turtle.forward(h)
+            turtle.left(90)
+        turtle.end_fill()
+    else:
+        turtle.pensize(linewidth)
+        turtle.pendown()
+        for _ in range(2):
+            turtle.forward(w)
+            turtle.left(90)
+            turtle.forward(h)
+            turtle.left(90)
+        turtle.penup()
+    turtle.setheading(_h)
+    turtle.pensize(_sz)
+    if _down:
+        turtle.pendown()
+
+turtle.rect = rect
+`;
+const PRELUDE_LINES = TURTLE_PRELUDE.split('\n').length - 1;
+
 function configSkulpt() {
   const { w, h } = getCanvasSize();
 
@@ -815,6 +853,9 @@ function configSkulpt() {
     target: 'turtle-target',
     width:  w,
     height: h,
+    worldWidth:  w,
+    worldHeight: h,
+    animate: true,
   };
 }
 
@@ -891,15 +932,28 @@ function runCode() {
   const myToken = _runToken;
   setRunningUI(true);
 
-  // Clear turtle target div before each run so Skulpt re-creates canvas fresh
-  document.getElementById('turtle-target').innerHTML = '';
+  // Clear turtle target and reset Skulpt turtle module instance cache
+  const turtleTarget = document.getElementById('turtle-target');
+  if (turtleTarget) {
+    if (turtleTarget.turtleInstance && typeof turtleTarget.turtleInstance.reset === 'function') {
+      try { turtleTarget.turtleInstance.reset(); } catch(e){}
+    }
+    delete turtleTarget.turtleInstance;
+    turtleTarget.innerHTML = '';
+  }
+  if (Sk.sysmodules) {
+    delete Sk.sysmodules['turtle'];
+    delete Sk.sysmodules['src/lib/turtle.js'];
+  }
 
   _startTracking();   // start intercepting RAF / setTimeout
   configSkulpt();
 
-  const code = editor.getValue();
+  const userCode = editor.getValue();
+  const codeToRun = TURTLE_PRELUDE + userCode;
+
   currentPromise = Sk.misceval.asyncToPromise(function() {
-    return Sk.importMainWithBody("<stdin>", false, code, true);
+    return Sk.importMainWithBody("<stdin>", false, codeToRun, true);
   });
 
   currentPromise.then(function() {
@@ -910,10 +964,15 @@ function runCode() {
   }, function(err) {
     _stopTracking();
     if (_runToken !== myToken) return;   // already force-stopped
-    const msg = err && err.toString ? err.toString() : String(err);
+    let msg = err && err.toString ? err.toString() : String(err);
     if (msg.includes('ExecLimit') || msg.includes('forcibly') || msg.includes('Interrupt')) {
       // silently ignore — stopCode() already printed the message
     } else {
+      // Adjust error line number by removing prelude lines
+      msg = msg.replace(/on line (\d+)/g, function(match, num) {
+        const line = parseInt(num, 10) - PRELUDE_LINES;
+        return `on line ${line > 0 ? line : 1}`;
+      });
       appendConsole('❌ 错误: ' + msg, 'err');
       document.getElementById('console-err-badge').style.display = 'inline';
     }
@@ -1226,6 +1285,10 @@ const SNIPPET_CATEGORIES = [
       { icon: '⬅️', label: '后退 50',    code: 'turtle.backward(50)',   display: 'turtle.backward(50)'  },
       { icon: '↩️', label: '右转 90°',   code: 'turtle.right(90)',      display: 'turtle.right(90)'     },
       { icon: '↪️', label: '左转 90°',   code: 'turtle.left(90)',       display: 'turtle.left(90)'      },
+      { icon: '📍', label: '移至坐标',   code: 'turtle.goto(0, 0)',     display: 'turtle.goto(x, y)'    },
+      { icon: '↔️', label: '设置横坐标', code: 'turtle.setx(100)',      display: 'turtle.setx(100)'     },
+      { icon: '↕️', label: '设置纵坐标', code: 'turtle.sety(100)',      display: 'turtle.sety(100)'     },
+      { icon: '🐢', label: '海龟造型',   code: 'turtle.shape("turtle")', display: 'turtle.shape("turtle")'},
       { icon: '✋', label: '抬笔',        code: 'turtle.penup()',        display: 'turtle.penup()'        },
       { icon: '✏️', label: '落笔',        code: 'turtle.pendown()',      display: 'turtle.pendown()'      },
       { icon: '📏', label: '笔粗 3',      code: 'turtle.pensize(3)',     display: 'turtle.pensize(3)'    },
@@ -1280,6 +1343,11 @@ const SNIPPET_CATEGORIES = [
         icon: '🔺', label: '输入边长画三角形',
         display: 'input → triangle',
         code: `side = int(input("请输入三角形边长："))\nfor i in range(3):\n    turtle.forward(side)\n    turtle.right(120)`
+      },
+      {
+        icon: '🔲', label: '输入宽高画矩形',
+        display: 'input → rect',
+        code: `w = int(input("请输入矩形宽度："))\nh = int(input("请输入矩形高度："))\nrect(w, h, 0, 0, 2)`
       },
     ]
   },
@@ -1349,6 +1417,16 @@ const SNIPPET_CATEGORIES = [
     icon: '🏗️',
     label: '常用图形结构',
     snippets: [
+      {
+        icon: '🔲', label: '空心矩形 (rect)',
+        display: 'rect(w, h, x, y, 线宽)',
+        code: `rect(120, 80, 0, 0, 2)`
+      },
+      {
+        icon: '⬛', label: '实心矩形 (rect)',
+        display: 'rect(w, h, x, y, 0)',
+        code: `turtle.fillcolor("gold")\nrect(100, 60, -50, -30, 0)`
+      },
       {
         icon: '⬛', label: '正方形',
         display: 'for i in range(4)…',
