@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐢 Python Turtle 编程乐园</title>
+
+<!-- CodeMirror -->
+<link rel="stylesheet" href="lib/codemirror/codemirror.min.css">
+<link rel="stylesheet" href="lib/codemirror/dracula.min.css">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="lib/fontawesome/css/all.min.css">
+
+<style>
+/* ===== CSS Reset & Base ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-dark:    #0f0f1a;
+  --bg-panel:   #1a1a2e;
+  --bg-card:    #16213e;
+  --bg-input:   #0d1117;
+  --accent:     #7c3aed;
+  --accent2:    #06b6d4;
+  --accent3:    #10b981;
+  --danger:     #ef4444;
+  --warn:       #f59e0b;
+  --text:       #e2e8f0;
+  --text-muted: #94a3b8;
+  --border:     #2d3748;
+  --radius:     12px;
+  --radius-sm:  8px;
+  --shadow:     0 4px 24px rgba(0,0,0,0.4);
+}
+
+body {
+  font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif;
+  background: var(--bg-dark);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ===== Top Header ===== */
+#header {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e3a5f 100%);
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.5);
+  flex-shrink: 0;
+  border-bottom: 2px solid var(--accent);
+}
+
+#header .logo {
+  font-size: 24px;
+  font-weight: 900;
+  background: linear-gradient(90deg, #a78bfa, #34d399, #60a5fa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+#header .header-logo-img {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+#header .spacer { flex: 1; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+.btn:active { transform: translateY(0); }
+
+.btn-run   { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
+.btn-stop  { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
+.btn-clear { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; }
+.btn-save  { background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; }
+.btn-grid  { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: #fff; font-size: 13px; padding: 8px 14px; }
+.btn-sm    { font-size: 13px; padding: 7px 12px; }
+
+/* ===== Main Layout ===== */
+#main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  gap: 0;
+}
+
+/* ===== Left Panel ===== */
+#left-panel {
+  width: 340px;
+  min-width: 300px;
+  background: var(--bg-panel);
+  display: flex;
+  flex-direction: column;
+  border-right: 2px solid var(--border);
+  overflow: hidden;
+}
+
+#editor-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-bottom: 2px solid var(--border);
+}
+
+#editor-label {
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.CodeMirror {
+  font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  height: 100% !important;
+  flex: 1;
+}
+.CodeMirror-scroll { height: 100%; }
+
+/* ===== Left Sidebar Panels ===== */
+#sidebar-panels {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  flex-shrink: 0;
+  max-height: 55vh;
+}
+#sidebar-panels::-webkit-scrollbar { width: 5px; }
+#sidebar-panels::-webkit-scrollbar-track { background: var(--bg-panel); }
+#sidebar-panels::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.panel-section {
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-header {
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--accent2);
+  background: var(--bg-card);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+  letter-spacing: 0.5px;
+  transition: background 0.15s;
+}
+.panel-header:hover { background: #1e2d45; }
+.panel-header .toggle-icon { margin-left: auto; transition: transform 0.2s; font-size: 11px; }
+.panel-header.collapsed .toggle-icon { transform: rotate(-90deg); }
+
+.panel-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.panel-body.hidden { display: none; }
+
+/* ===== Color Palette ===== */
+#color-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  padding: 2px;
+}
+
+.color-swatch {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2.5px solid rgba(255,255,255,0.15);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  position: relative;
+}
+.color-swatch:hover {
+  transform: scale(1.25);
+  box-shadow: 0 0 10px rgba(255,255,255,0.4);
+  border-color: rgba(255,255,255,0.7);
+  z-index: 1;
+}
+.color-swatch[data-color="white"] { border-color: #666; }
+
+.custom-color-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.custom-color-row label {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+#custom-color {
+  width: 44px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 2px;
+  background: none;
+}
+
+/* ===== Accordion for Snippets ===== */
+.snippet-category { border-bottom: 1px solid var(--border); }
+.snippet-cat-header {
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #a78bfa;
+  background: rgba(124,58,237,0.1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+  transition: background 0.15s;
+}
+.snippet-cat-header:hover { background: rgba(124,58,237,0.2); }
+.snippet-cat-header .cat-arrow { margin-left: auto; font-size: 10px; transition: transform 0.2s; }
+.snippet-cat-header.collapsed .cat-arrow { transform: rotate(-90deg); }
+
+.snippet-cat-body { padding: 6px 8px; display: flex; flex-direction: column; gap: 4px; }
+.snippet-cat-body.hidden { display: none; }
+
+.snippet-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  font-size: 12.5px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+.snippet-btn:hover {
+  background: rgba(124,58,237,0.2);
+  border-color: var(--accent);
+  transform: translateX(3px);
+}
+.snippet-btn .snippet-icon { font-size: 14px; flex-shrink: 0; }
+.snippet-btn .snippet-label { font-weight: 600; }
+.snippet-btn .snippet-code {
+  margin-left: auto;
+  font-family: "Consolas", monospace;
+  font-size: 11px;
+  color: #60a5fa;
+  opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+/* ===== Right: Canvas Area ===== */
+#right-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-dark);
+  min-width: 0;
+  overflow: hidden;
+}
+
+#canvas-toolbar {
+  padding: 8px 16px;
+  background: var(--bg-card);
+  border-bottom: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+#canvas-toolbar .tb-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+#canvas-toolbar .spacer { flex: 1; }
+
+#coord-display {
+  font-size: 13px;
+  color: var(--accent2);
+  font-family: "Consolas", monospace;
+  background: rgba(6,182,212,0.1);
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(6,182,212,0.3);
+  display: none;
+  white-space: nowrap;
+}
+
+#canvas-wrap {
+  flex: 1;
+  display: flex;
+  background: radial-gradient(ellipse at center, #1a1a2e 0%, #0f0f1a 100%);
+  overflow: hidden;
+  position: relative;
+  padding: 0;
+}
+
+#canvas-container {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+/* Skulpt turtle renders into #turtle-target div */
+#turtle-target {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+/* The canvas Skulpt creates inside turtle-target */
+#turtle-target canvas {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#gridcanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 10;
+  display: none;
+}
+
+/* ===== Input Dialog ===== */
+#input-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+}
+#input-overlay.active { display: flex; }
+#input-dialog {
+  background: var(--bg-panel);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  min-width: 320px;
+  max-width: 480px;
+  width: 90%;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+#input-dialog .dlg-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--accent2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.5px;
+}
+#input-prompt-text {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.6;
+  font-family: "JetBrains Mono", "Consolas", monospace;
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  min-height: 32px;
+}
+#input-field {
+  padding: 10px 14px;
+  background: var(--bg-input);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 15px;
+  font-family: "JetBrains Mono", "Consolas", monospace;
+  outline: none;
+  transition: border-color 0.15s;
+}
+#input-field:focus { border-color: var(--accent2); }
+#input-dialog .dlg-actions { display: flex; gap: 10px; justify-content: flex-end; }
+#btn-input-ok {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 9px 22px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+#btn-input-ok:hover { opacity: 0.9; }
+
+/* ===== Console ===== */
+#console-wrap {
+  flex-shrink: 0;
+  border-top: 2px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  max-height: 160px;
+}
+
+#console-header {
+  padding: 6px 14px;
+  background: var(--bg-card);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.5px;
+  user-select: none;
+  border-bottom: 1px solid var(--border);
+}
+#console-header:hover { background: #1e2d45; }
+#console-toggle-icon { margin-left: auto; transition: transform 0.2s; }
+#console-header.collapsed #console-toggle-icon { transform: rotate(-90deg); }
+
+#console-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 14px;
+  background: #0d1117;
+  font-family: "JetBrains Mono", "Consolas", monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  min-height: 60px;
+}
+#console-body::-webkit-scrollbar { width: 5px; }
+#console-body::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 3px; }
+#console-body.hidden { display: none; }
+
+.console-line { margin: 1px 0; }
+.console-out  { color: #34d399; }
+.console-err  { color: #f87171; }
+.console-info { color: #60a5fa; }
+.console-sys  { color: #94a3b8; font-style: italic; }
+
+/* ===== Tooltip ===== */
+.tooltip-wrap { position: relative; }
+.tooltip-wrap:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  z-index: 999;
+  border: 1px solid var(--border);
+}
+
+/* ===== Scrollbar global ===== */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ===== Running indicator ===== */
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.running-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  display: inline-block;
+  animation: pulse 1s infinite;
+}
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<div id="header">
+  <img src="assets/logo.png" alt="makcoo" class="header-logo-img">
+  <div class="spacer"></div>
+  <button class="btn btn-run" id="btn-run-stop"><i class="fas fa-play"></i> 运行</button>
+  <button class="btn btn-clear" id="btn-clear"><i class="fas fa-trash-alt"></i> 清除</button>
+</div>
+
+<!-- ===== MAIN ===== -->
+<div id="main">
+
+  <!-- LEFT PANEL -->
+  <div id="left-panel">
+
+    <!-- Editor -->
+    <div id="editor-wrap">
+      <div id="editor-label">
+        <i class="fas fa-code"></i> Python 代码编辑器
+        <span id="run-indicator" style="margin-left:auto;display:none">
+          <span class="running-dot"></span>
+          <span style="font-size:11px;color:#10b981;margin-left:4px">运行中…</span>
+        </span>
+      </div>
+      <textarea id="code-editor"></textarea>
+    </div>
+
+    <!-- Sidebar panels -->
+    <div id="sidebar-panels">
+
+      <!-- Color Palette -->
+      <div class="panel-section">
+        <div class="panel-header" onclick="togglePanel(this)">
+          <span>🎨</span> 颜色面板
+          <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+        </div>
+        <div class="panel-body">
+          <div id="color-grid"></div>
+          <div class="custom-color-row">
+            <label>🖌️ 自定义颜色：</label>
+            <input type="color" id="custom-color" value="#ff6b6b" title="选择自定义颜色">
+            <button class="btn btn-sm" onclick="insertCustomColor()"
+              style="background:linear-gradient(135deg,#ec4899,#be185d);color:#fff;padding:5px 10px;font-size:12px;">
+              插入
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Snippet Panel -->
+      <div class="panel-section">
+        <div class="panel-header" onclick="togglePanel(this)">
+          <span>📦</span> 代码片段助手
+          <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+        </div>
+        <div class="panel-body" id="snippet-panel-body" style="padding:4px 0;"></div>
+      </div>
+
+    </div><!-- /sidebar-panels -->
+  </div><!-- /left-panel -->
+
+  <!-- RIGHT PANEL -->
+  <div id="right-panel">
+
+    <!-- Canvas Toolbar -->
+    <div id="canvas-toolbar">
+      <span class="tb-label"><i class="fas fa-paint-brush"></i> 绘图舞台</span>
+      <div class="spacer"></div>
+      <div id="coord-display">📍 坐标: (0, 0)</div>
+      <button class="btn btn-grid" id="btn-grid" onclick="toggleGrid()">
+        <i class="fas fa-th"></i> 显示坐标系
+      </button>
+      <button class="btn btn-save" onclick="saveImage()">
+        <i class="fas fa-download"></i> 保存图片
+      </button>
+    </div>
+
+    <!-- Canvas Container -->
+    <div id="canvas-wrap">
+      <div id="canvas-container">
+        <div id="turtle-target"></div>
+        <canvas id="gridcanvas"></canvas>
+      </div>
+    </div>
+
+    <!-- Console -->
+    <div id="console-wrap">
+      <div id="console-header" onclick="toggleConsole()">
+        <i class="fas fa-terminal"></i>
+        <span>输出控制台</span>
+        <span id="console-err-badge" style="display:none;background:#ef4444;color:#fff;padding:1px 7px;border-radius:10px;font-size:11px;">错误</span>
+        <span id="console-toggle-icon"><i class="fas fa-chevron-up"></i></span>
+      </div>
+      <div id="console-body">
+        <div class="console-line console-sys">▶ 控制台已就绪。点击「运行」开始执行代码。</div>
+      </div>
+    </div>
+
+  </div><!-- /right-panel -->
+</div><!-- /main -->
+
+<!-- ===== INPUT DIALOG ===== -->
+<div id="input-overlay">
+  <div id="input-dialog">
+    <div class="dlg-title"><i class="fas fa-keyboard"></i> 程序需要输入</div>
+    <div id="input-prompt-text"></div>
+    <input id="input-field" type="text" placeholder="在此输入内容，按 Enter 确认" autocomplete="off" spellcheck="false">
+    <div class="dlg-actions">
+      <button id="btn-input-ok"><i class="fas fa-check"></i> 确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCRIPTS ===== -->
+<script src="lib/codemirror/codemirror.min.js"></script>
+<script src="lib/codemirror/python.min.js"></script>
+<script src="lib/codemirror/closebrackets.min.js"></script>
+<script src="lib/codemirror/matchbrackets.min.js"></script>
+<script src="lib/codemirror/comment.min.js"></script>
+<script src="lib/codemirror/active-line.min.js"></script>
+<script src="lib/skulpt/skulpt.min.js"></script>
+<script src="lib/skulpt/skulpt-stdlib.js"></script>
+
+
+<script>
+/* =====================================================
+   CANVAS RESIZE: grid canvas fills canvas-wrap
+   ===================================================== */
+function getCanvasSize() {
+  const container = document.getElementById('canvas-container');
+  return {
+    w: container.clientWidth  || container.offsetWidth  || 800,
+    h: container.clientHeight || container.offsetHeight || 600
+  };
+}
+
+function resizeGridCanvas() {
+  const gc = document.getElementById('gridcanvas');
+  const { w, h } = getCanvasSize();
+  gc.width  = w;
+  gc.height = h;
+  gc.style.width  = w + 'px';
+  gc.style.height = h + 'px';
+  if (gridVisible) drawGrid();
+}
+
+window.addEventListener('resize', function() {
+  resizeGridCanvas();
+  // Also update Skulpt turtle canvas size if it exists
+  const turtleCanvas = document.querySelector('#turtle-target canvas');
+  if (turtleCanvas) {
+    const { w, h } = getCanvasSize();
+    turtleCanvas.width  = w;
+    turtleCanvas.height = h;
+    turtleCanvas.style.width  = w + 'px';
+    turtleCanvas.style.height = h + 'px';
+  }
+});
+
+setTimeout(resizeGridCanvas, 100);
+
+/* =====================================================
+   EDITOR SETUP
+   ===================================================== */
+const STARTER_CODE = `import turtle
+
+# 🐢 欢迎来到 Python Turtle 编程乐园！
+# 点击「运行」按钮，看看海龟怎么画图吧！
+
+turtle.speed(3)
+turtle.pensize(2)
+turtle.pencolor("blue")
+
+for i in range(4):
+    turtle.forward(100)
+    turtle.right(90)
+`;
+
+const editor = CodeMirror.fromTextArea(document.getElementById('code-editor'), {
+  mode: 'python',
+  theme: 'dracula',
+  lineNumbers: true,
+  autoCloseBrackets: true,
+  matchBrackets: true,
+  styleActiveLine: true,
+  indentUnit: 4,
+  tabSize: 4,
+  indentWithTabs: false,
+  extraKeys: {
+    "Tab": function(cm) {
+      if (cm.somethingSelected()) { cm.indentSelection("add"); }
+      else { cm.replaceSelection("    ", "end"); }
+    },
+    "Ctrl-Enter": runCode,
+    "Cmd-Enter":  runCode,
+  }
+});
+editor.setValue(STARTER_CODE);
+
+// Make editor fill its container
+setTimeout(() => { editor.refresh(); }, 100);
+
+/* =====================================================
+   CODE INSERTION UTILITY
+   ===================================================== */
+function insertCode(snippet) {
+  editor.focus();
+  const cursor = editor.getCursor();
+  const lineContent = editor.getLine(cursor.line) || '';
+
+  // If cursor is at start of empty line, insert there; otherwise go to new line
+  let insertPos;
+  if (lineContent.trim() === '') {
+    insertPos = { line: cursor.line, ch: 0 };
+    editor.replaceRange('', insertPos, { line: cursor.line, ch: lineContent.length });
+  } else {
+    // Move to end of current line
+    insertPos = { line: cursor.line, ch: lineContent.length };
+    snippet = '\n' + snippet;
+  }
+
+  // Ensure snippet ends with newline
+  if (!snippet.endsWith('\n')) snippet += '\n';
+
+  editor.replaceRange(snippet, insertPos);
+
+  // Move cursor to end of inserted text
+  const lines = snippet.split('\n');
+  const newLine = insertPos.line + lines.length - 1;
+  const newCh = lines[lines.length - 1].length;
+  editor.setCursor({ line: newLine, ch: newCh });
+  editor.focus();
+}
+
+/* =====================================================
+   SKULPT / TURTLE RUNTIME
+   ===================================================== */
+let isRunning = false;
+let currentPromise = null;
+
+/* =====================================================
+   INPUT DIALOG (supports Python input())
+   ===================================================== */
+let _inputResolve = null;
+
+function showInputDialog(prompt) {
+  return new Promise(resolve => {
+    _inputResolve = resolve;
+    const overlay = document.getElementById('input-overlay');
+    const field   = document.getElementById('input-field');
+    const promptEl = document.getElementById('input-prompt-text');
+    promptEl.textContent = prompt || '请输入：';
+    field.value = '';
+    overlay.classList.add('active');
+    setTimeout(() => field.focus(), 60);
+  });
+}
+
+function submitInput() {
+  const val = document.getElementById('input-field').value;
+  document.getElementById('input-overlay').classList.remove('active');
+  if (_inputResolve) { _inputResolve(val); _inputResolve = null; }
+}
+
+document.getElementById('btn-input-ok').addEventListener('click', submitInput);
+document.getElementById('input-field').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') submitInput();
+});
+
+function configSkulpt() {
+  const { w, h } = getCanvasSize();
+
+  Sk.configure({
+    output: function(text) {
+      if (text && text !== '\n') appendConsole(text.replace(/\n$/, ''), 'out');
+    },
+    inputfun: function(prompt) {
+      appendConsole('⌨️ ' + (prompt || '等待输入…'), 'info');
+      return showInputDialog(prompt || '');
+    },
+    inputfunTakesPrompt: true,
+    read: function(x) {
+      if (Sk.builtinFiles === undefined || Sk.builtinFiles["files"][x] === undefined)
+        throw "File not found: '" + x + "'";
+      return Sk.builtinFiles["files"][x];
+    },
+    __future__: Sk.python3,
+    execLimit: null,
+  });
+  Sk.TurtleGraphics = {
+    target: 'turtle-target',
+    width:  w,
+    height: h,
+  };
+}
+
+/* =====================================================
+   ANIMATION FRAME / TIMER TRACKER (for force-stop)
+   ===================================================== */
+let _trackedRAFs     = new Set();
+let _trackedTimers   = new Set();
+let _origRAF         = window.requestAnimationFrame.bind(window);
+let _origCAF         = window.cancelAnimationFrame.bind(window);
+let _origSetTimeout  = window.setTimeout.bind(window);
+let _origClearTimeout= window.clearTimeout.bind(window);
+
+function _startTracking() {
+  _trackedRAFs.clear();
+  _trackedTimers.clear();
+  window.requestAnimationFrame = function(cb) {
+    const id = _origRAF(cb);
+    _trackedRAFs.add(id);
+    return id;
+  };
+  window.cancelAnimationFrame = function(id) {
+    _trackedRAFs.delete(id);
+    return _origCAF(id);
+  };
+  window.setTimeout = function(fn, delay) {
+    const id = _origSetTimeout(fn, delay);
+    _trackedTimers.add(id);
+    return id;
+  };
+  window.clearTimeout = function(id) {
+    _trackedTimers.delete(id);
+    return _origClearTimeout(id);
+  };
+}
+
+function _stopTracking() {
+  window.requestAnimationFrame = _origRAF;
+  window.cancelAnimationFrame  = _origCAF;
+  window.setTimeout  = _origSetTimeout;
+  window.clearTimeout= _origClearTimeout;
+}
+
+function _cancelAllPending() {
+  _trackedRAFs.forEach(id   => { try { _origCAF(id);         } catch(e){} });
+  _trackedTimers.forEach(id => { try { _origClearTimeout(id);} catch(e){} });
+  _trackedRAFs.clear();
+  _trackedTimers.clear();
+}
+
+function setRunningUI(running) {
+  const btn = document.getElementById('btn-run-stop');
+  const indicator = document.getElementById('run-indicator');
+  if (running) {
+    btn.className = 'btn btn-stop';
+    btn.innerHTML = '<i class="fas fa-stop"></i> 停止';
+    indicator.style.display = 'flex';
+  } else {
+    btn.className = 'btn btn-run';
+    btn.innerHTML = '<i class="fas fa-play"></i> 运行';
+    indicator.style.display = 'none';
+  }
+}
+
+// Each run gets a unique token; stale promise callbacks compare and bail out
+let _runToken = 0;
+
+function runCode() {
+  if (isRunning) { stopCode(); return; }
+  clearConsole();
+  appendConsole('▶ 开始运行…', 'sys');
+  isRunning = true;
+  _runToken++;
+  const myToken = _runToken;
+  setRunningUI(true);
+
+  // Clear turtle target div before each run so Skulpt re-creates canvas fresh
+  document.getElementById('turtle-target').innerHTML = '';
+
+  _startTracking();   // start intercepting RAF / setTimeout
+  configSkulpt();
+
+  const code = editor.getValue();
+  currentPromise = Sk.misceval.asyncToPromise(function() {
+    return Sk.importMainWithBody("<stdin>", false, code, true);
+  });
+
+  currentPromise.then(function() {
+    _stopTracking();
+    if (_runToken !== myToken) return;   // already force-stopped
+    appendConsole('✅ 运行完成！', 'sys');
+    stopRunning();
+  }, function(err) {
+    _stopTracking();
+    if (_runToken !== myToken) return;   // already force-stopped
+    const msg = err && err.toString ? err.toString() : String(err);
+    if (msg.includes('ExecLimit') || msg.includes('forcibly') || msg.includes('Interrupt')) {
+      // silently ignore — stopCode() already printed the message
+    } else {
+      appendConsole('❌ 错误: ' + msg, 'err');
+      document.getElementById('console-err-badge').style.display = 'inline';
+    }
+    stopRunning();
+  });
+}
+
+function stopCode() {
+  if (!isRunning) return;
+  // 1. Invalidate current run's promise callbacks
+  _runToken++;
+  // 2. Cancel all pending animation frames and timers Skulpt queued
+  _cancelAllPending();
+  _stopTracking();
+  // 3. Try to interrupt Skulpt's Python loop too
+  try { Sk.execLimit = 1; } catch(e) {}
+  // 4. Close any open input() dialog immediately
+  if (_inputResolve) {
+    document.getElementById('input-overlay').classList.remove('active');
+    const r = _inputResolve;
+    _inputResolve = null;
+    r('');
+  }
+  appendConsole('⏹ 已停止。', 'sys');
+  // 5. Reset UI immediately — don't wait for the promise
+  stopRunning();
+}
+
+function stopRunning() {
+  isRunning = false;
+  try { Sk.execLimit = null; } catch(e) {}
+  setRunningUI(false);
+}
+
+function clearCanvas() {
+  if (isRunning) { stopCode(); }
+  document.getElementById('turtle-target').innerHTML = '';
+  if (gridVisible) drawGrid();
+  appendConsole('🗑️ 画布已清除。', 'sys');
+}
+
+document.getElementById('btn-run-stop').addEventListener('click', function() {
+  if (isRunning) stopCode(); else runCode();
+});
+document.getElementById('btn-clear').addEventListener('click', clearCanvas);
+
+/* =====================================================
+   CONSOLE
+   ===================================================== */
+function appendConsole(text, type) {
+  const body = document.getElementById('console-body');
+  const div = document.createElement('div');
+  div.className = 'console-line console-' + type;
+  div.textContent = text;
+  body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+}
+
+function clearConsole() {
+  document.getElementById('console-body').innerHTML = '';
+  document.getElementById('console-err-badge').style.display = 'none';
+}
+
+function toggleConsole() {
+  const body = document.getElementById('console-body');
+  const header = document.getElementById('console-header');
+  body.classList.toggle('hidden');
+  header.classList.toggle('collapsed');
+}
+
+/* =====================================================
+   SAVE IMAGE (Feature 1)
+   ===================================================== */
+function saveImage() {
+  const turtleCanvas = document.querySelector('#turtle-target canvas');
+  const { w, h } = getCanvasSize();
+
+  const offscreen = document.createElement('canvas');
+  offscreen.width  = w;
+  offscreen.height = h;
+  const ctx = offscreen.getContext('2d');
+
+  // White background
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, w, h);
+
+  // Draw turtle canvas if it exists
+  if (turtleCanvas) ctx.drawImage(turtleCanvas, 0, 0);
+
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const ts = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+
+  const link = document.createElement('a');
+  link.download = `turtle_${ts}.png`;
+  link.href = offscreen.toDataURL('image/png');
+  link.click();
+
+  appendConsole(`💾 图片已保存：turtle_${ts}.png`, 'info');
+}
+
+/* =====================================================
+   GRID & COORDINATE OVERLAY (Feature 2)
+   ===================================================== */
+let gridVisible = false;
+
+function toggleGrid() {
+  gridVisible = !gridVisible;
+  const gc = document.getElementById('gridcanvas');
+  const btn = document.getElementById('btn-grid');
+  const coordDisp = document.getElementById('coord-display');
+
+  if (gridVisible) {
+    gc.style.display = 'block';
+    coordDisp.style.display = 'inline-flex';
+    btn.innerHTML = '<i class="fas fa-th"></i> 隐藏坐标系';
+    btn.style.background = 'linear-gradient(135deg, #be185d, #9d174d)';
+    drawGrid();
+  } else {
+    gc.style.display = 'none';
+    coordDisp.style.display = 'none';
+    btn.innerHTML = '<i class="fas fa-th"></i> 显示坐标系';
+    btn.style.background = '';
+  }
+}
+
+function drawGrid() {
+  const gc = document.getElementById('gridcanvas');
+  const ctx = gc.getContext('2d');
+  const W = gc.width;
+  const H = gc.height;
+  const cx = W / 2;   // pixel position of turtle (0,0)
+  const cy = H / 2;
+  const STEP = 50;    // pixels per grid unit
+
+  ctx.clearRect(0, 0, W, H);
+
+  // ---- Minor grid lines (centered on cx, cy so lines pass through origin) ----
+  ctx.strokeStyle = 'rgba(160,170,210,0.15)';
+  ctx.lineWidth = 1;
+
+  // Vertical lines: start from cx going left and right in steps of STEP
+  for (let x = cx % STEP; x <= W; x += STEP) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  // Horizontal lines: start from cy going up and down
+  for (let y = cy % STEP; y <= H; y += STEP) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  // ---- Axes ----
+  ctx.strokeStyle = 'rgba(99,179,237,0.75)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy); ctx.stroke(); // X axis
+  ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke(); // Y axis
+
+  // ---- Tick marks + labels ----
+  ctx.font = '10px "JetBrains Mono", Consolas, monospace';
+
+  // X axis ticks (from center outward)
+  for (let px = cx + STEP; px < W - 4; px += STEP) {
+    const val = Math.round(px - cx);
+    ctx.strokeStyle = 'rgba(99,179,237,0.45)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(px, cy - 4); ctx.lineTo(px, cy + 4); ctx.stroke();
+    ctx.fillStyle = 'rgba(148,163,184,0.8)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(String(val), px, cy + 7);
+  }
+  for (let px = cx - STEP; px > 4; px -= STEP) {
+    const val = Math.round(px - cx);
+    ctx.strokeStyle = 'rgba(99,179,237,0.45)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(px, cy - 4); ctx.lineTo(px, cy + 4); ctx.stroke();
+    ctx.fillStyle = 'rgba(148,163,184,0.8)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(String(val), px, cy + 7);
+  }
+
+  // Y axis ticks (turtle Y is flipped: up=positive)
+  for (let py = cy - STEP; py > 4; py -= STEP) {
+    const val = Math.round(cy - py);
+    ctx.strokeStyle = 'rgba(99,179,237,0.45)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx - 4, py); ctx.lineTo(cx + 4, py); ctx.stroke();
+    ctx.fillStyle = 'rgba(148,163,184,0.8)';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(val), cx - 7, py);
+  }
+  for (let py = cy + STEP; py < H - 4; py += STEP) {
+    const val = Math.round(cy - py);
+    ctx.strokeStyle = 'rgba(99,179,237,0.45)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx - 4, py); ctx.lineTo(cx + 4, py); ctx.stroke();
+    ctx.fillStyle = 'rgba(148,163,184,0.8)';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(val), cx - 7, py);
+  }
+
+  // ---- Origin dot + label ----
+  ctx.fillStyle = 'rgba(99,179,237,0.95)';
+  ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.font = 'bold 10px "JetBrains Mono", Consolas, monospace';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+  ctx.fillText('(0,0)', cx + 5, cy - 4);
+
+  // ---- Axis direction labels ----
+  ctx.font = 'bold 11px "Microsoft YaHei", sans-serif';
+  ctx.fillStyle = 'rgba(99,179,237,0.85)';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+  ctx.fillText('+X →', W - 6, cy - 4);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+  ctx.fillText('← -X', 6, cy - 4);
+  ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+  ctx.fillText('+Y', cx - 5, 5);
+  ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+  ctx.fillText('-Y', cx - 5, H - 5);
+
+  // ---- Arrow heads ----
+  ctx.fillStyle = 'rgba(99,179,237,0.75)';
+  drawArrow(ctx, W - 12, cy, W - 1, cy);
+  drawArrow(ctx, 12, cy, 1, cy);
+  drawArrow(ctx, cx, 12, cx, 1);
+  drawArrow(ctx, cx, H - 12, cx, H - 1);
+}
+
+function drawArrow(ctx, fromX, fromY, toX, toY) {
+  const headLen = 8;
+  const angle = Math.atan2(toY - fromY, toX - fromX);
+  ctx.beginPath();
+  ctx.moveTo(toX, toY);
+  ctx.lineTo(toX - headLen * Math.cos(angle - Math.PI/6), toY - headLen * Math.sin(angle - Math.PI/6));
+  ctx.lineTo(toX - headLen * Math.cos(angle + Math.PI/6), toY - headLen * Math.sin(angle + Math.PI/6));
+  ctx.closePath();
+  ctx.fill();
+}
+
+// Mouse coordinate tracking
+const canvasContainer = document.getElementById('canvas-container');
+canvasContainer.addEventListener('mousemove', function(e) {
+  if (!gridVisible) return;
+  const rect = canvasContainer.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const W  = canvasContainer.clientWidth;
+  const H  = canvasContainer.clientHeight;
+  if (mx < 0 || my < 0 || mx > W || my > H) return;
+  const tx = Math.round(mx - W / 2);
+  const ty = Math.round(H / 2 - my);
+  document.getElementById('coord-display').textContent = `📍 坐标: (${tx}, ${ty})`;
+});
+
+/* =====================================================
+   COLOR PALETTE (Feature 3)
+   ===================================================== */
+const COLORS = [
+  { name: 'red',       hex: '#ef4444' },
+  { name: 'orange',    hex: '#f97316' },
+  { name: 'yellow',    hex: '#eab308' },
+  { name: 'gold',      hex: '#f59e0b' },
+  { name: 'green',     hex: '#22c55e' },
+  { name: 'lime',      hex: '#84cc16' },
+  { name: 'cyan',      hex: '#06b6d4' },
+  { name: 'lightblue', hex: '#7dd3fc' },
+  { name: 'blue',      hex: '#3b82f6' },
+  { name: 'purple',    hex: '#a855f7' },
+  { name: 'magenta',   hex: '#ec4899' },
+  { name: 'pink',      hex: '#f9a8d4' },
+  { name: 'brown',     hex: '#92400e' },
+  { name: 'white',     hex: '#ffffff' },
+  { name: 'gray',      hex: '#6b7280' },
+  { name: 'black',     hex: '#111111' },
+];
+
+(function buildColorGrid() {
+  const grid = document.getElementById('color-grid');
+  COLORS.forEach(c => {
+    const swatch = document.createElement('div');
+    swatch.className = 'color-swatch tooltip-wrap';
+    swatch.style.background = c.hex;
+    swatch.setAttribute('data-color', c.name);
+    swatch.setAttribute('data-tip', c.name);
+    swatch.title = c.name;
+    swatch.addEventListener('click', () => {
+      insertCode(`turtle.pencolor("${c.name}")`);
+    });
+    grid.appendChild(swatch);
+  });
+})();
+
+function insertCustomColor() {
+  const hex = document.getElementById('custom-color').value;
+  insertCode(`turtle.pencolor("${hex}")`);
+}
+
+document.getElementById('custom-color').addEventListener('change', function() {
+  insertCustomColor();
+});
+
+/* =====================================================
+   CODE SNIPPETS (Feature 4)
+   ===================================================== */
+const SNIPPET_CATEGORIES = [
+  {
+    id: 'basic',
+    icon: '🏃',
+    label: '基础动作',
+    snippets: [
+      { icon: '➡️', label: '前进 100',   code: 'forward(100)',   display: 'forward(100)'  },
+      { icon: '⬅️', label: '后退 50',    code: 'backward(50)',   display: 'backward(50)'  },
+      { icon: '↩️', label: '右转 90°',   code: 'right(90)',      display: 'right(90)'     },
+      { icon: '↪️', label: '左转 90°',   code: 'left(90)',       display: 'left(90)'      },
+      { icon: '✋', label: '抬笔',        code: 'penup()',        display: 'penup()'        },
+      { icon: '✏️', label: '落笔',        code: 'pendown()',      display: 'pendown()'      },
+      { icon: '📏', label: '笔粗 3',      code: 'pensize(3)',     display: 'pensize(3)'    },
+      { icon: '⚡', label: '速度 5',      code: 'speed(5)',       display: 'speed(5)'      },
+      { icon: '🏠', label: '回到原点',   code: 'home()',         display: 'home()'         },
+      { icon: '👁️', label: '隐藏海龟',   code: 'hideturtle()',   display: 'hideturtle()'   },
+    ]
+  },
+  {
+    id: 'fill',
+    icon: '🎨',
+    label: '画笔与填充',
+    snippets: [
+      { icon: '🟢', label: '开始填充',   code: 'begin_fill()',   display: 'begin_fill()'  },
+      { icon: '🔴', label: '结束填充',   code: 'end_fill()',     display: 'end_fill()'    },
+      { icon: '⭕', label: '画圆 r=50',  code: 'circle(50)',     display: 'circle(50)'    },
+      { icon: '🔵', label: '画点',       code: 'dot(10)',        display: 'dot(10)'       },
+    ]
+  },
+  {
+    id: 'input',
+    icon: '⌨️',
+    label: '数据输入',
+    raw: true,
+    snippets: [
+      {
+        icon: '🔢', label: '输入整数',
+        display: 'int(input(...))',
+        code: `n = int(input("请输入一个整数："))\nprint(n)`
+      },
+      {
+        icon: '💧', label: '输入小数',
+        display: 'float(input(...))',
+        code: `x = float(input("请输入一个小数："))\nprint(x)`
+      },
+      {
+        icon: '📝', label: '输入字符串',
+        display: 'input(...)',
+        code: `s = input("请输入内容：")\nprint(s)`
+      },
+      {
+        icon: '📐', label: '输入边长画正方形',
+        display: 'input → forward',
+        code: `side = int(input("请输入正方形边长："))\nfor i in range(4):\n    turtle.forward(side)\n    turtle.right(90)`
+      },
+      {
+        icon: '⭕', label: '输入半径画圆',
+        display: 'input → circle',
+        code: `r = int(input("请输入圆的半径："))\nturtle.circle(r)`
+      },
+      {
+        icon: '🔺', label: '输入边长画三角形',
+        display: 'input → triangle',
+        code: `side = int(input("请输入三角形边长："))\nfor i in range(3):\n    turtle.forward(side)\n    turtle.right(120)`
+      },
+    ]
+  },
+  {
+    id: 'selection',
+    icon: '🔀',
+    label: '选择结构',
+    raw: true,
+    snippets: [
+      {
+        icon: '❓', label: 'if 单分支',
+        display: 'if 条件:',
+        code: `if 条件:\n    turtle.forward(100)`
+      },
+      {
+        icon: '↔️', label: 'if-else 双分支',
+        display: 'if...else',
+        code: `if 条件:\n    turtle.forward(100)\nelse:\n    turtle.backward(100)`
+      },
+      {
+        icon: '🔀', label: 'if-elif-else 多分支',
+        display: 'if...elif...else',
+        code: `if 条件1:\n    turtle.forward(100)\nelif 条件2:\n    turtle.right(90)\nelse:\n    turtle.backward(100)`
+      },
+      {
+        icon: '📐', label: '判断大小画图',
+        display: 'if n>100:...',
+        code: `n = int(input("输入边长："))\nif n > 100:\n    turtle.pencolor("red")\nelse:\n    turtle.pencolor("blue")\nfor i in range(4):\n    turtle.forward(n)\n    turtle.right(90)`
+      },
+    ]
+  },
+  {
+    id: 'loop',
+    icon: '🔁',
+    label: '循环结构',
+    raw: true,
+    snippets: [
+      {
+        icon: '🔄', label: 'for 循环（次数）',
+        display: 'for i in range(n)',
+        code: `for i in range(4):\n    turtle.forward(100)\n    turtle.right(90)`
+      },
+      {
+        icon: '🔢', label: 'for 遍历列表',
+        display: 'for x in list',
+        code: `colors = ["red", "green", "blue"]\nfor c in colors:\n    turtle.pencolor(c)\n    turtle.forward(80)\n    turtle.right(120)`
+      },
+      {
+        icon: '🌀', label: 'while 循环',
+        display: 'while 条件:',
+        code: `i = 0\nwhile i < 5:\n    turtle.forward(50 + i * 20)\n    turtle.right(90)\n    i += 1`
+      },
+      {
+        icon: '📥', label: '输入次数循环',
+        display: 'n=input → for',
+        code: `n = int(input("画几边形？"))\nangle = 360 / n\nfor i in range(n):\n    turtle.forward(100)\n    turtle.right(angle)`
+      },
+      {
+        icon: '⭐', label: '嵌套循环',
+        display: 'for in for',
+        code: `colors = ["red","orange","yellow","green","blue","purple"]\nfor i in range(6):\n    turtle.pencolor(colors[i])\n    for j in range(4):\n        turtle.forward(60)\n        turtle.right(90)\n    turtle.penup()\n    turtle.forward(70)\n    turtle.pendown()`
+      },
+    ]
+  },
+  {
+    id: 'shapes',
+    icon: '🏗️',
+    label: '常用图形结构',
+    snippets: [
+      {
+        icon: '⬛', label: '正方形',
+        display: 'for i in range(4)…',
+        code: `for i in range(4):\n    turtle.forward(100)\n    turtle.right(90)`
+      },
+      {
+        icon: '🔺', label: '等边三角形',
+        display: 'for i in range(3)…',
+        code: `for i in range(3):\n    turtle.forward(100)\n    turtle.right(120)`
+      },
+      {
+        icon: '⭐', label: '五角星',
+        display: 'for i in range(5)…',
+        code: `for i in range(5):\n    turtle.forward(100)\n    turtle.right(144)`
+      },
+      {
+        icon: '🔷', label: '六边形',
+        display: 'for i in range(6)…',
+        code: `for i in range(6):\n    turtle.forward(100)\n    turtle.right(60)`
+      },
+      {
+        icon: '🌀', label: '螺旋线',
+        display: 'for i in range(36)…',
+        code: `for i in range(36):\n    turtle.forward(i * 5)\n    turtle.right(91)`
+      },
+      {
+        icon: '🌈', label: '彩虹正方形',
+        display: 'colors + loop…',
+        code: `colors = ["red","orange","yellow","green","blue","purple"]\nfor i in range(36):\n    turtle.pencolor(colors[i % 6])\n    turtle.forward(i * 5)\n    turtle.right(91)`
+      },
+    ]
+  }
+];
+
+(function buildSnippetPanel() {
+  const container = document.getElementById('snippet-panel-body');
+
+  SNIPPET_CATEGORIES.forEach(cat => {
+    // Category header
+    const catDiv = document.createElement('div');
+    catDiv.className = 'snippet-category';
+
+    const header = document.createElement('div');
+    header.className = 'snippet-cat-header';
+    header.innerHTML = `<span>${cat.icon}</span> ${cat.label} <span class="cat-arrow"><i class="fas fa-chevron-down"></i></span>`;
+    header.addEventListener('click', () => {
+      header.classList.toggle('collapsed');
+      body.classList.toggle('hidden');
+    });
+
+    const body = document.createElement('div');
+    body.className = 'snippet-cat-body';
+
+    cat.snippets.forEach(s => {
+      const btn = document.createElement('button');
+      btn.className = 'snippet-btn';
+
+      // For turtle.xxx() snippets, prepend "turtle."
+      let insertSnippet = s.code;
+      // Raw categories (input/selection/loop): insert code as-is
+      if (!cat.raw) {
+        // If this is a simple function call (not a block), prepend "turtle."
+        if (!s.code.includes('\n') && !s.code.startsWith('for') && !s.code.startsWith('colors')) {
+          insertSnippet = `turtle.${s.code}`;
+        }
+      }
+
+      btn.innerHTML = `
+        <span class="snippet-icon">${s.icon}</span>
+        <span class="snippet-label">${s.label}</span>
+        <span class="snippet-code">${s.display}</span>
+      `;
+      btn.addEventListener('click', () => insertCode(insertSnippet));
+      body.appendChild(btn);
+    });
+
+    catDiv.appendChild(header);
+    catDiv.appendChild(body);
+    container.appendChild(catDiv);
+  });
+})();
+
+/* =====================================================
+   PANEL TOGGLE HELPER
+   ===================================================== */
+function togglePanel(header) {
+  header.classList.toggle('collapsed');
+  const body = header.nextElementSibling;
+  if (body) body.classList.toggle('hidden');
+}
+
+/* =====================================================
+   RESIZE: Keep editor height correct
+   ===================================================== */
+function relayout() {
+  editor.refresh();
+  resizeGridCanvas();
+}
+window.addEventListener('resize', relayout);
+setTimeout(relayout, 200);
+
+/* =====================================================
+   KEYBOARD SHORTCUT HINT
+   ===================================================== */
+appendConsole('💡 提示：按 Ctrl+Enter（Mac: Cmd+Enter）快速运行代码', 'info');
+</script>
+</body>
+</html>
+
