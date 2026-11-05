@@ -290,6 +290,87 @@ body {
   max-width: 150px;
 }
 
+/* ===== Write Snippet Widget ===== */
+.write-widget-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.write-widget-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.write-widget-row label,
+.write-field label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.write-widget-row input {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 4px 8px;
+  outline: none;
+}
+.write-widget-row input:focus {
+  border-color: var(--accent2);
+}
+.write-widget-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 8px;
+}
+.write-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.write-field select {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 11.5px;
+  padding: 4px 6px;
+  outline: none;
+  cursor: pointer;
+}
+.write-field select:focus {
+  border-color: var(--accent2);
+}
+.write-code-preview {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10.5px;
+  color: #38bdf8;
+  background: #090d16;
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: all;
+}
+.btn-insert-write {
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  color: #fff;
+  justify-content: center;
+  padding: 7px 12px;
+  font-size: 12px;
+  width: 100%;
+}
+
 /* ===== Right: Canvas Area ===== */
 #right-panel {
   flex: 1;
@@ -689,15 +770,17 @@ turtle.speed(3)
 turtle.pensize(2)
 turtle.pencolor("blue")
 
-# 从原点 (0, 0) 开始画正方形
-for i in range(4):
-    turtle.forward(100)
-    turtle.right(90)
-
-# 使用内置 rect 函数绘制矩形：rect(宽度, 高度, x坐标, y坐标, 线宽)
+# 使用内置 rect 函数绘制矩形（左上角为 (x, y) 坐标起点）
+# 参数：rect(宽度, 高度, x坐标, y坐标, 线宽)
 # 线宽为 0 表示实心填充矩形
 turtle.fillcolor("gold")
-rect(60, 40, -30, -20, 0)
+rect(120, 80, -60, 40, 0)
+
+# 在矩形上方书写文字
+turtle.penup()
+turtle.goto(0, 60)
+turtle.pencolor("purple")
+turtle.write("Turtle 编程乐园", align="center", font=("Microsoft YaHei", 18, "bold"))
 `;
 
 const editor = CodeMirror.fromTextArea(document.getElementById('code-editor'), {
@@ -801,24 +884,25 @@ def rect(w, h, x=0, y=0, linewidth=1):
     _h = turtle.heading()
     _sz = turtle.pensize()
     turtle.penup()
+    # (x, y) 为矩形左上角定位坐标
     turtle.goto(x, y)
     turtle.setheading(0)
     if linewidth == 0:
         turtle.begin_fill()
         for _ in range(2):
             turtle.forward(w)
-            turtle.left(90)
+            turtle.right(90)
             turtle.forward(h)
-            turtle.left(90)
+            turtle.right(90)
         turtle.end_fill()
     else:
         turtle.pensize(linewidth)
         turtle.pendown()
         for _ in range(2):
             turtle.forward(w)
-            turtle.left(90)
+            turtle.right(90)
             turtle.forward(h)
-            turtle.left(90)
+            turtle.right(90)
         turtle.penup()
     turtle.setheading(_h)
     turtle.pensize(_sz)
@@ -826,6 +910,7 @@ def rect(w, h, x=0, y=0, linewidth=1):
         turtle.pendown()
 
 turtle.rect = rect
+write = turtle.write
 `;
 const PRELUDE_LINES = TURTLE_PRELUDE.split('\n').length - 1;
 
@@ -1309,6 +1394,109 @@ const SNIPPET_CATEGORIES = [
     ]
   },
   {
+    id: 'text',
+    icon: '✍️',
+    label: '文字绘制 (write)',
+    customRender: function(container) {
+      const card = document.createElement('div');
+      card.className = 'write-widget-card';
+      card.innerHTML = `
+        <div class="write-widget-row">
+          <label><i class="fas fa-font"></i> 内容：</label>
+          <input type="text" id="write-text" value="Python Turtle" placeholder="输入要书写的文本">
+        </div>
+        <div class="write-widget-grid">
+          <div class="write-field">
+            <label>字体名称</label>
+            <select id="write-font-family">
+              <option value="Microsoft YaHei" selected>微软雅黑</option>
+              <option value="SimHei">黑体</option>
+              <option value="KaiTi">楷体</option>
+              <option value="SimSun">宋体</option>
+              <option value="Arial">Arial</option>
+              <option value="Courier New">等宽 (Courier)</option>
+            </select>
+          </div>
+          <div class="write-field">
+            <label>字体大小</label>
+            <select id="write-font-size">
+              <option value="12">12 px</option>
+              <option value="14">14 px</option>
+              <option value="16">16 px</option>
+              <option value="18" selected>18 px</option>
+              <option value="20">20 px</option>
+              <option value="24">24 px</option>
+              <option value="32">32 px</option>
+              <option value="48">48 px</option>
+            </select>
+          </div>
+          <div class="write-field">
+            <label>字体类型</label>
+            <select id="write-font-type">
+              <option value="normal">常规 (normal)</option>
+              <option value="bold" selected>加粗 (bold)</option>
+              <option value="italic">斜体 (italic)</option>
+              <option value="bold italic">粗斜体 (bold italic)</option>
+            </select>
+          </div>
+          <div class="write-field">
+            <label>对齐方式</label>
+            <select id="write-align">
+              <option value="left">左对齐 (left)</option>
+              <option value="center" selected>居中 (center)</option>
+              <option value="right">右对齐 (right)</option>
+            </select>
+          </div>
+        </div>
+        <div class="write-code-preview" id="write-code-preview"></div>
+        <button class="btn btn-sm btn-insert-write" id="btn-insert-write" type="button">
+          <i class="fas fa-plus"></i> 插入 write 代码
+        </button>
+      `;
+      container.appendChild(card);
+
+      const textInp = card.querySelector('#write-text');
+      const fontFam = card.querySelector('#write-font-family');
+      const fontSz  = card.querySelector('#write-font-size');
+      const fontTy  = card.querySelector('#write-font-type');
+      const alignSl = card.querySelector('#write-align');
+      const preview = card.querySelector('#write-code-preview');
+      const btn     = card.querySelector('#btn-insert-write');
+
+      function updateWritePreview() {
+        const rawTxt = textInp.value || 'Python Turtle';
+        const txt = rawTxt.replace(/"/g, '\\"');
+        const code = `turtle.write("${txt}", align="${alignSl.value}", font=("${fontFam.value}", ${fontSz.value}, "${fontTy.value}"))`;
+        preview.textContent = code;
+        return code;
+      }
+
+      [textInp, fontFam, fontSz, fontTy, alignSl].forEach(el => {
+        el.addEventListener('input', updateWritePreview);
+        el.addEventListener('change', updateWritePreview);
+      });
+      updateWritePreview();
+
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const code = updateWritePreview();
+        insertCode(code);
+      });
+    },
+    snippets: [
+      {
+        icon: '📝', label: '简易文字',
+        code: 'turtle.write("你好，世界！")',
+        display: 'write("文本")'
+      },
+      {
+        icon: '🎯', label: '居中大标题',
+        code: 'turtle.write("标题文字", align="center", font=("Microsoft YaHei", 24, "bold"))',
+        display: 'write(align,font)'
+      }
+    ]
+  },
+  {
     id: 'input',
     icon: '⌨️',
     label: '数据输入',
@@ -1480,18 +1668,25 @@ const SNIPPET_CATEGORIES = [
     const body = document.createElement('div');
     body.className = 'snippet-cat-body';
 
-    cat.snippets.forEach(s => {
-      const btn = document.createElement('button');
-      btn.className = 'snippet-btn';
+    // Support custom rendered widget cards (e.g. write function with dropdowns)
+    if (typeof cat.customRender === 'function') {
+      cat.customRender(body);
+    }
 
-      btn.innerHTML = `
-        <span class="snippet-icon">${s.icon}</span>
-        <span class="snippet-label">${s.label}</span>
-        <span class="snippet-code">${s.display}</span>
-      `;
-      btn.addEventListener('click', () => insertCode(s.code));
-      body.appendChild(btn);
-    });
+    if (Array.isArray(cat.snippets)) {
+      cat.snippets.forEach(s => {
+        const btn = document.createElement('button');
+        btn.className = 'snippet-btn';
+
+        btn.innerHTML = `
+          <span class="snippet-icon">${s.icon}</span>
+          <span class="snippet-label">${s.label}</span>
+          <span class="snippet-code">${s.display}</span>
+        `;
+        btn.addEventListener('click', () => insertCode(s.code));
+        body.appendChild(btn);
+      });
+    }
 
     catDiv.appendChild(header);
     catDiv.appendChild(body);
