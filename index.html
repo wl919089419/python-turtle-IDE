@@ -643,6 +643,14 @@ body {
 </head>
 <body>
 
+<!-- Hidden font warmup elements to force browser to load and decode webfonts immediately on page open -->
+<div style="position:fixed;left:-9999px;top:-9999px;opacity:0;pointer-events:none;z-index:-1;" aria-hidden="true">
+  <span style="font-family:'MaShanZheng'">预热字体</span>
+  <span style="font-family:'ZCOOLKuaiLe'">预热字体</span>
+  <span style="font-family:'PressStart2P'">WARMUP</span>
+  <span style="font-family:'Pacifico'">Warmup</span>
+</div>
+
 <!-- ===== HEADER ===== -->
 <div id="header">
   <img src="assets/logo.png" alt="makcoo" class="header-logo-img">
@@ -1106,10 +1114,21 @@ function setRunningUI(running) {
   }
 }
 
+// Preload web fonts so canvas renders correctly on very first execution
+function preloadFonts() {
+  if (document.fonts && document.fonts.load) {
+    document.fonts.load('16px "MaShanZheng"');
+    document.fonts.load('16px "ZCOOLKuaiLe"');
+    document.fonts.load('16px "PressStart2P"');
+    document.fonts.load('16px "Pacifico"');
+  }
+}
+preloadFonts();
+
 // Each run gets a unique token; stale promise callbacks compare and bail out
 let _runToken = 0;
 
-function runCode() {
+async function runCode() {
   if (isRunning) { stopCode(); return; }
   clearConsole();
   appendConsole('▶ 开始运行…', 'sys');
@@ -1117,6 +1136,14 @@ function runCode() {
   _runToken++;
   const myToken = _runToken;
   setRunningUI(true);
+
+  // Ensure all fonts are loaded and ready before canvas starts drawing
+  if (document.fonts && document.fonts.ready) {
+    try {
+      await document.fonts.ready;
+    } catch(e) {}
+  }
+  if (_runToken !== myToken) return; // stopped while waiting for fonts
 
   // Clear turtle target and reset Skulpt turtle module instance cache
   const turtleTarget = document.getElementById('turtle-target');
