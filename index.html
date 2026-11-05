@@ -53,6 +53,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
+  --editor-font-size: 14px;
   --bg-dark:    #0f0f1a;
   --bg-panel:   #1a1a2e;
   --bg-card:    #16213e;
@@ -149,13 +150,48 @@ body {
 
 /* ===== Left Panel ===== */
 #left-panel {
-  width: 340px;
-  min-width: 300px;
+  width: 360px;
+  min-width: 260px;
+  max-width: 75vw;
   background: var(--bg-panel);
   display: flex;
   flex-direction: column;
-  border-right: 2px solid var(--border);
   overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* ===== Resizer between Left and Right Panel ===== */
+.gutter-resizer-x {
+  width: 6px;
+  background: var(--border);
+  cursor: col-resize;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 20;
+  user-select: none;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+.gutter-resizer-x:hover,
+.gutter-resizer-x.resizing {
+  background: var(--accent);
+  box-shadow: 0 0 10px rgba(124, 58, 237, 0.6);
+}
+.gutter-resizer-x::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 1px;
+  transition: background 0.15s ease;
+}
+.gutter-resizer-x:hover::before,
+.gutter-resizer-x.resizing::before {
+  background: #ffffff;
 }
 
 #editor-wrap {
@@ -167,22 +203,62 @@ body {
 }
 
 #editor-label {
-  padding: 8px 14px;
+  padding: 6px 12px;
   font-size: 12px;
   font-weight: 700;
   color: var(--text-muted);
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
   background: var(--bg-card);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.editor-font-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 2px 4px;
+}
+
+.font-ctrl-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 10px;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+.font-ctrl-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+#font-size-val {
+  font-size: 11px;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-weight: 700;
+  color: var(--accent2);
+  min-width: 32px;
+  text-align: center;
+  user-select: none;
 }
 
 .CodeMirror {
   font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace !important;
-  font-size: 14px !important;
+  font-size: var(--editor-font-size, 14px) !important;
   line-height: 1.6 !important;
   height: 100% !important;
   flex: 1;
@@ -709,11 +785,28 @@ body {
     <!-- Editor -->
     <div id="editor-wrap">
       <div id="editor-label">
-        <i class="fas fa-code"></i> Python 代码编辑器
-        <span id="run-indicator" style="margin-left:auto;display:none">
-          <span class="running-dot"></span>
-          <span style="font-size:11px;color:#10b981;margin-left:4px">运行中…</span>
-        </span>
+        <div style="display:flex;align-items:center;gap:6px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          <i class="fas fa-code"></i>
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Python 代码编辑器</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+          <span id="run-indicator" style="display:none;align-items:center;">
+            <span class="running-dot"></span>
+            <span style="font-size:11px;color:#10b981;margin-left:4px">运行中…</span>
+          </span>
+          <div class="editor-font-controls" title="调整编辑器字体大小 (快捷键: Ctrl + / - 或 Ctrl + 滚轮)">
+            <button type="button" class="font-ctrl-btn" onclick="changeFontSize(-1)" title="缩小字号 (Ctrl -)">
+              <i class="fas fa-minus"></i>
+            </button>
+            <span id="font-size-val">14px</span>
+            <button type="button" class="font-ctrl-btn" onclick="changeFontSize(1)" title="放大字号 (Ctrl +)">
+              <i class="fas fa-plus"></i>
+            </button>
+            <button type="button" class="font-ctrl-btn" onclick="resetFontSize()" title="重置字号为 14px (Ctrl 0)">
+              <i class="fas fa-undo-alt"></i>
+            </button>
+          </div>
+        </div>
       </div>
       <textarea id="code-editor"></textarea>
     </div>
@@ -756,6 +849,9 @@ body {
 
     </div><!-- /sidebar-panels -->
   </div><!-- /left-panel -->
+
+  <!-- Resizer Bar between Left and Right Panel -->
+  <div id="resizer-x" class="gutter-resizer-x" title="按住拖拽调整编辑器宽度 (双击恢复默认宽度)"></div>
 
   <!-- RIGHT PANEL -->
   <div id="right-panel">
@@ -925,9 +1021,27 @@ const editor = CodeMirror.fromTextArea(document.getElementById('code-editor'), {
     },
     "Ctrl-Enter": runCode,
     "Cmd-Enter":  runCode,
+    "Ctrl-=":     function() { changeFontSize(1); },
+    "Cmd-=":      function() { changeFontSize(1); },
+    "Ctrl--":     function() { changeFontSize(-1); },
+    "Cmd--":      function() { changeFontSize(-1); },
+    "Ctrl-0":     function() { resetFontSize(); },
+    "Cmd-0":      function() { resetFontSize(); },
   }
 });
 editor.setValue(STARTER_CODE);
+
+// Ctrl / Cmd + Mouse Wheel to zoom font size
+editor.getWrapperElement().addEventListener('wheel', function(e) {
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault();
+    if (e.deltaY < 0) {
+      changeFontSize(1);
+    } else if (e.deltaY > 0) {
+      changeFontSize(-1);
+    }
+  }
+}, { passive: false });
 
 // Make editor fill its container
 setTimeout(() => { editor.refresh(); }, 100);
@@ -1965,6 +2079,123 @@ const SNIPPET_CATEGORIES = [
     container.appendChild(catDiv);
   });
 })();
+
+/* =====================================================
+   EDITOR FONT SIZE ADJUSTMENT
+   ===================================================== */
+let currentFontSize = 14;
+const MIN_FONT_SIZE = 10;
+const MAX_FONT_SIZE = 36;
+
+function setEditorFontSize(size, save = true) {
+  currentFontSize = Math.max(MIN_FONT_SIZE, Math.min(MAX_FONT_SIZE, size));
+  document.documentElement.style.setProperty('--editor-font-size', currentFontSize + 'px');
+  const display = document.getElementById('font-size-val');
+  if (display) {
+    display.textContent = currentFontSize + 'px';
+  }
+  if (save) {
+    try { localStorage.setItem('turtle_ide_font_size', currentFontSize); } catch(e){}
+  }
+  if (typeof editor !== 'undefined' && editor) {
+    editor.refresh();
+  }
+}
+
+function changeFontSize(delta) {
+  setEditorFontSize(currentFontSize + delta);
+}
+
+function resetFontSize() {
+  setEditorFontSize(14);
+}
+
+function initEditorFontSize() {
+  try {
+    const saved = localStorage.getItem('turtle_ide_font_size');
+    if (saved) {
+      const s = parseInt(saved, 10);
+      if (!isNaN(s) && s >= MIN_FONT_SIZE && s <= MAX_FONT_SIZE) {
+        setEditorFontSize(s, false);
+        return;
+      }
+    }
+  } catch(e){}
+  setEditorFontSize(14, false);
+}
+initEditorFontSize();
+
+/* =====================================================
+   RESIZABLE LEFT PANEL (EDITOR WIDTH ADJUSTMENT)
+   ===================================================== */
+function initLeftPanelResizer() {
+  const resizer = document.getElementById('resizer-x');
+  const leftPanel = document.getElementById('left-panel');
+  if (!resizer || !leftPanel) return;
+
+  const DEFAULT_WIDTH = 360;
+  const MIN_WIDTH = 260;
+
+  // Restore saved width if valid
+  try {
+    const savedWidth = localStorage.getItem('turtle_ide_left_width');
+    if (savedWidth) {
+      const w = parseInt(savedWidth, 10);
+      const maxW = Math.floor(window.innerWidth - 300);
+      if (!isNaN(w) && w >= MIN_WIDTH && w <= maxW) {
+        leftPanel.style.width = w + 'px';
+      }
+    }
+  } catch(e){}
+
+  let isDragging = false;
+  let startX = 0;
+  let startWidth = 0;
+
+  resizer.addEventListener('mousedown', function(e) {
+    isDragging = true;
+    startX = e.clientX;
+    startWidth = leftPanel.getBoundingClientRect().width;
+    resizer.classList.add('resizing');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  window.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    const deltaX = e.clientX - startX;
+    const maxW = Math.max(MIN_WIDTH, Math.floor(window.innerWidth - 300));
+    let newWidth = startWidth + deltaX;
+    if (newWidth < MIN_WIDTH) newWidth = MIN_WIDTH;
+    if (newWidth > maxW) newWidth = maxW;
+
+    leftPanel.style.width = newWidth + 'px';
+    if (typeof editor !== 'undefined' && editor) editor.refresh();
+    handleResize();
+  });
+
+  window.addEventListener('mouseup', function() {
+    if (!isDragging) return;
+    isDragging = false;
+    resizer.classList.remove('resizing');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    const currentW = Math.round(leftPanel.getBoundingClientRect().width);
+    try { localStorage.setItem('turtle_ide_left_width', currentW); } catch(e){}
+    if (typeof editor !== 'undefined' && editor) editor.refresh();
+    handleResize();
+  });
+
+  // Double-click to reset width
+  resizer.addEventListener('dblclick', function() {
+    leftPanel.style.width = DEFAULT_WIDTH + 'px';
+    try { localStorage.setItem('turtle_ide_left_width', DEFAULT_WIDTH); } catch(e){}
+    if (typeof editor !== 'undefined' && editor) editor.refresh();
+    handleResize();
+  });
+}
+initLeftPanelResizer();
 
 /* =====================================================
    PANEL TOGGLE HELPER
