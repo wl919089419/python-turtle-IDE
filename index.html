@@ -287,7 +287,7 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 120px;
+  max-width: 150px;
 }
 
 /* ===== Right: Canvas Area ===== */
@@ -1222,16 +1222,16 @@ const SNIPPET_CATEGORIES = [
     icon: '🏃',
     label: '基础动作',
     snippets: [
-      { icon: '➡️', label: '前进 100',   code: 'forward(100)',   display: 'forward(100)'  },
-      { icon: '⬅️', label: '后退 50',    code: 'backward(50)',   display: 'backward(50)'  },
-      { icon: '↩️', label: '右转 90°',   code: 'right(90)',      display: 'right(90)'     },
-      { icon: '↪️', label: '左转 90°',   code: 'left(90)',       display: 'left(90)'      },
-      { icon: '✋', label: '抬笔',        code: 'penup()',        display: 'penup()'        },
-      { icon: '✏️', label: '落笔',        code: 'pendown()',      display: 'pendown()'      },
-      { icon: '📏', label: '笔粗 3',      code: 'pensize(3)',     display: 'pensize(3)'    },
-      { icon: '⚡', label: '速度 5',      code: 'speed(5)',       display: 'speed(5)'      },
-      { icon: '🏠', label: '回到原点',   code: 'home()',         display: 'home()'         },
-      { icon: '👁️', label: '隐藏海龟',   code: 'hideturtle()',   display: 'hideturtle()'   },
+      { icon: '➡️', label: '前进 100',   code: 'turtle.forward(100)',   display: 'turtle.forward(100)'  },
+      { icon: '⬅️', label: '后退 50',    code: 'turtle.backward(50)',   display: 'turtle.backward(50)'  },
+      { icon: '↩️', label: '右转 90°',   code: 'turtle.right(90)',      display: 'turtle.right(90)'     },
+      { icon: '↪️', label: '左转 90°',   code: 'turtle.left(90)',       display: 'turtle.left(90)'      },
+      { icon: '✋', label: '抬笔',        code: 'turtle.penup()',        display: 'turtle.penup()'        },
+      { icon: '✏️', label: '落笔',        code: 'turtle.pendown()',      display: 'turtle.pendown()'      },
+      { icon: '📏', label: '笔粗 3',      code: 'turtle.pensize(3)',     display: 'turtle.pensize(3)'    },
+      { icon: '⚡', label: '速度 5',      code: 'turtle.speed(5)',       display: 'turtle.speed(5)'      },
+      { icon: '🏠', label: '回到原点',   code: 'turtle.home()',         display: 'turtle.home()'         },
+      { icon: '👁️', label: '隐藏海龟',   code: 'turtle.hideturtle()',   display: 'turtle.hideturtle()'   },
     ]
   },
   {
@@ -1239,10 +1239,10 @@ const SNIPPET_CATEGORIES = [
     icon: '🎨',
     label: '画笔与填充',
     snippets: [
-      { icon: '🟢', label: '开始填充',   code: 'begin_fill()',   display: 'begin_fill()'  },
-      { icon: '🔴', label: '结束填充',   code: 'end_fill()',     display: 'end_fill()'    },
-      { icon: '⭕', label: '画圆 r=50',  code: 'circle(50)',     display: 'circle(50)'    },
-      { icon: '🔵', label: '画点',       code: 'dot(10)',        display: 'dot(10)'       },
+      { icon: '🟢', label: '开始填充',   code: 'turtle.begin_fill()',   display: 'turtle.begin_fill()'  },
+      { icon: '🔴', label: '结束填充',   code: 'turtle.end_fill()',     display: 'turtle.end_fill()'    },
+      { icon: '⭕', label: '画圆 r=50',  code: 'turtle.circle(50)',     display: 'turtle.circle(50)'    },
+      { icon: '🔵', label: '画点',       code: 'turtle.dot(10)',        display: 'turtle.dot(10)'       },
     ]
   },
   {
@@ -1406,22 +1406,12 @@ const SNIPPET_CATEGORIES = [
       const btn = document.createElement('button');
       btn.className = 'snippet-btn';
 
-      // For turtle.xxx() snippets, prepend "turtle."
-      let insertSnippet = s.code;
-      // Raw categories (input/selection/loop): insert code as-is
-      if (!cat.raw) {
-        // If this is a simple function call (not a block), prepend "turtle."
-        if (!s.code.includes('\n') && !s.code.startsWith('for') && !s.code.startsWith('colors')) {
-          insertSnippet = `turtle.${s.code}`;
-        }
-      }
-
       btn.innerHTML = `
         <span class="snippet-icon">${s.icon}</span>
         <span class="snippet-label">${s.label}</span>
         <span class="snippet-code">${s.display}</span>
       `;
-      btn.addEventListener('click', () => insertCode(insertSnippet));
+      btn.addEventListener('click', () => insertCode(s.code));
       body.appendChild(btn);
     });
 
